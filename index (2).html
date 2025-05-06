@@ -1,0 +1,131 @@
+<script type="text/javascript">
+        var gk_isXlsx = false;
+        var gk_xlsxFileLookup = {};
+        var gk_fileData = {};
+        function filledCell(cell) {
+          return cell !== '' && cell != null;
+        }
+        function loadFileData(filename) {
+        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+            try {
+                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                var firstSheetName = workbook.SheetNames[0];
+                var worksheet = workbook.Sheets[firstSheetName];
+
+                // Convert sheet to JSON to filter blank rows
+                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                // Filter out blank rows (rows where all cells are empty, null, or undefined)
+                var filteredData = jsonData.filter(row => row.some(filledCell));
+
+                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
+                var headerRowIndex = filteredData.findIndex((row, index) =>
+                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                );
+                // Fallback
+                if (headerRowIndex === -1 || headerRowIndex > 25) {
+                  headerRowIndex = 0;
+                }
+
+                // Convert filtered JSON back to CSV
+                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
+                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+                return csv;
+            } catch (e) {
+                console.error(e);
+                return "";
+            }
+        }
+        return gk_fileData[filename] || "";
+        }
+        </script><!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>مدیریت بازی پوکر خانگی</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#007bff">
+  <link rel="icon" href="icon.png">
+</head>
+<body>
+  <!-- صفحه لاگین -->
+  <div id="login-page" class="page active">
+    <h1>ورود به سیستم</h1>
+    <form id="login-form">
+      <input type="text" id="username" placeholder="نام کاربری" required>
+      <input type="password" id="password" placeholder="رمز عبور" required>
+      <select id="role" required>
+        <option value="" disabled selected>نقش را انتخاب کنید</option>
+        <option value="admin">ادمین</option>
+        <option value="player">بازیکن</option>
+      </select>
+      <button type="submit">ورود</button>
+      <p id="login-error" class="error"></p>
+    </form>
+  </div>
+
+  <!-- داشبورد ادمین -->
+  <div id="admin-dashboard" class="page">
+    <header>
+      <button id="menu-toggle" class="hamburger">☰</button>
+      <h1>مدیریت بازی پوکر</h1>
+    </header>
+    <nav id="sidebar" class="sidebar">
+      <ul>
+        <li><a href="#" id="add-player">اضافه کردن بازیکن</a></li>
+        <li><a href="#" id="record-deposit">ثبت واریز و چیپ</a></li>
+        <li><a href="#" id="start-game">شروع بازی جدید</a></li>
+        <li><a href="#" id="logout">خروج</a></li>
+      </ul>
+    </nav>
+    <main>
+      <h2>جدول بازیکنان</h2>
+      <table id="players-table">
+        <thead>
+          <tr>
+            <th>نام</th>
+            <th>میزان واریزی</th>
+            <th>چیپ دریافتی</th>
+            <th>تاریخ و ساعت</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </main>
+  </div>
+
+  <!-- فرم اضافه کردن بازیکن -->
+  <div id="add-player-form" class="page">
+    <h2>اضافه کردن بازیکن جدید</h2>
+    <form id="player-form">
+      <input type="text" id="player-name" placeholder="نام بازیکن" required>
+      <button type="submit">اضافه کردن</button>
+      <button type="button" id="back-to-dashboard">بازگشت</button>
+    </form>
+  </div>
+
+  <!-- فرم ثبت واریز -->
+  <div id="record-deposit-form" class="page">
+    <h2>ثبت واریز و چیپ</h2>
+    <form id="deposit-form">
+      <select id="deposit-player" required>
+        <option value="" disabled selected>بازیکن را انتخاب کنید</option>
+      </select>
+      <input type="number" id="deposit-amount" placeholder="میزان واریزی" required>
+      <input type="number" id="chips-amount" placeholder="چیپ دریافتی" required>
+      <button type="submit">ثبت</button>
+      <button type="button" id="back-to-dashboard-deposit">بازگشت</button>
+    </form>
+  </div>
+
+  <!-- صفحه شروع بازی جدید -->
+  <div id="start-game-page" class="page">
+    <h2>شروع بازی جدید</h2>
+    <button id="start-new-game">شروع</button>
+    <button id="back-to-dashboard-game">بازگشت</button>
+  </div>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
